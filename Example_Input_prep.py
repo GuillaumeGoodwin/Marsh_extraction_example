@@ -1,4 +1,6 @@
 """
+Example_Input_prep.py 
+
 This is a Python script to prepare DEM files for the automated topographic detection of saltmarshes. This file is particularly important and performs the following actions:
 1. Convert your DEM into the ENVI format used by LSDTopoTools
 2. Apply a Wiener filter (optional)
@@ -70,14 +72,14 @@ for site in Sites:
     #          Run this stage from the directory where you store the TopoTools analysis pack.
     #          For me, this is: /home/s1563094/Datastore/Software/LSDTopoTools/Git_projects/LSDTopoTools_AnalysisDriver/Analysis_driver
     
-    print "Calculating slopes and curvatures"
+    """print "Calculating slopes, curvatures and hillshade"
     sourcedir = "/home/s1563094/Datastore/Software/LSDTopoTools/LSDTopoTools_MarshExtraction/Input/Topography/HIN_degraded/ "
     driverfile = "%s_slope_curv.LSDTT_driver " % (site)
-    os.system("./LSDTT_analysis_from_paramfile.out " + sourcedir + driverfile)
+    os.system("./LSDTT_analysis_from_paramfile.out " + sourcedir + driverfile)"""
 
 
     
-STOP # Comment this and the rest of point 3. when you have finished preparing your data.
+#STOP # Comment this and the rest of point 3. when you have finished preparing your data.
   
 
     
@@ -112,17 +114,22 @@ for site in Sites:
     os.system("gdalwarp -overwrite -of ENVI -cutline " + directory+cutfile + " -crop_to_cutline " + directory+srcfile + " " +  directory+dstfile)
 
     print " Clipping DEM raster"
-    srcfile = "%s_DEM.bil" % (gauge)
-    dstfile = "%s_DEM_clip.bil" % (gauge)
+    srcfile = "%s_DEM.bil" % (site)
+    dstfile = "%s_DEM_clip.bil" % (site)
     os.system("gdalwarp -of ENVI -t_srs EPSG:27700 -cutline " + cutfile + " -crop_to_cutline " + directory+srcfile + " " +  directory+dstfile)
     
     print " Clipping slope raster"
-    srcfile = "%s_slope.bil" % (gauge)
-    dstfile = "%s_slope_clip.bil" % (gauge)
+    srcfile = "%s_slope.bil" % (site)
+    dstfile = "%s_slope_clip.bil" % (site)
     os.system("gdalwarp -of ENVI -t_srs EPSG:27700 -cutline " + cutfile + " -crop_to_cutline " + directory+srcfile + " " +  directory+dstfile)
     
     print " Clipping curvature raster"
-    srcfile = "%s_curvature.bil" % (gauge)
-    dstfile = "%s_curvature_clip.bil" % (gauge)
+    srcfile = "%s_curvature.bil" % (site)
+    dstfile = "%s_curvature_clip.bil" % (site)
+    os.system("gdalwarp -of ENVI -t_srs EPSG:27700 -cutline " + cutfile + " -crop_to_cutline " + directory+srcfile + " " +  directory+dstfile)
+    
+    print " Clipping hillshade raster"
+    srcfile = "%s_hs.bil" % (site)
+    dstfile = "%s_hs_clip.bil" % (site)
     os.system("gdalwarp -of ENVI -t_srs EPSG:27700 -cutline " + cutfile + " -crop_to_cutline " + directory+srcfile + " " +  directory+dstfile)
 

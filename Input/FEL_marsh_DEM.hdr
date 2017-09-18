@@ -1,6 +1,6 @@
 ENVI
 description = {
-Input/Reference/FEL/FEL_marsh_DEM.bil}
+Input/FEL_marsh_DEM.bil}
 samples = 303
 lines   = 307
 bands   = 1
