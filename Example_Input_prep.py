@@ -113,6 +113,9 @@ for site in Sites:
     dstfile = "%s_ref_DEM_clip.bil"  % (site)
     os.system("gdalwarp -overwrite -of ENVI -cutline " + directory+cutfile + " -crop_to_cutline " + directory+srcfile + " " +  directory+dstfile)
 
+    
+    STOP
+    
     print " Clipping DEM raster"
     srcfile = "%s_DEM.bil" % (site)
     dstfile = "%s_DEM_clip.bil" % (site)

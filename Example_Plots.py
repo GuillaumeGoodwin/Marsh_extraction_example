@@ -45,85 +45,31 @@ from mpl_toolkits.basemap import Basemap, cm
 from matplotlib.patches import Rectangle
 import matplotlib.lines as mlines
 import matplotlib.patches as mpatches
-
+import timeit
 #------------------------------------------------------------------
 # Import the marsh-finding functions
 from Example_functions import ENVI_raster_binary_to_2d_array
 from Example_functions import ENVI_raster_binary_from_2d_array
-from Example_functions import add_subplot_axes
-from Example_functions import Distribution
-from Example_functions import define_search_space
-
-
-# This is a function straight out of the Python cookbook: https://stackoverflow.com/questions/26911898/matplotlib-curve-with-arrow-ticks
-def add_arrow_to_line2D(
-    axes, line, arrow_locs=[0.2, 0.4, 0.6, 0.8],
-    arrowstyle='-|>', arrowsize=1, transform=None):
-    """
-    Add arrows to a matplotlib.lines.Line2D at selected locations.
-
-    Parameters:
-    -----------
-    axes: 
-    line: Line2D object as returned by plot command
-    arrow_locs: list of locations where to insert arrows, % of total length
-    arrowstyle: style of the arrow
-    arrowsize: size of the arrow
-    transform: a matplotlib transform instance, default to data coordinates
-
-    Returns:
-    --------
-    arrows: list of arrows
-    """
-    if not isinstance(line, mlines.Line2D):
-        raise ValueError("expected a matplotlib.lines.Line2D object")
-    x, y = line.get_xdata(), line.get_ydata()
-
-    arrow_kw = {
-        "arrowstyle": arrowstyle,
-        "mutation_scale": 10 * arrowsize,
-    }
-
-    color = line.get_color()
-    use_multicolor_lines = isinstance(color, np.ndarray)
-    if use_multicolor_lines:
-        raise NotImplementedError("multicolor lines not supported")
-    else:
-        arrow_kw['color'] = color
-
-    linewidth = line.get_linewidth()
-    if isinstance(linewidth, np.ndarray):
-        raise NotImplementedError("multiwidth lines not supported")
-    else:
-        arrow_kw['linewidth'] = linewidth
-
-    if transform is None:
-        transform = axes.transData
-
-    arrows = []
-    for loc in arrow_locs:
-        s = np.cumsum(np.sqrt(np.diff(x) ** 2 + np.diff(y) ** 2))
-        n = np.searchsorted(s, s[-1] * loc)
-        arrow_tail = (x[n], y[n])
-        arrow_head = (np.mean(x[n:n + 2]), np.mean(y[n:n + 2]))
-        p = mpatches.FancyArrowPatch(
-            arrow_tail, arrow_head, transform=transform,
-            **arrow_kw)
-        axes.add_patch(p)
-        arrows.append(p)
-    return arrows
+from Example_functions import kernel
 
 
 
 # This is a function that makes an outline out of a raster where each object has a single given value
 
-def Outline (Raster, Outline_value):
+def Outline (Raster, Outline_value, Nodata_value):
 
-    P1 = np.where(Raster[:,1:] != Raster[:,:-1]) 
+    P1 = np.where(Raster[:,1:] != Raster[:,:-1])
     Raster[P1] = Outline_value           
 
     P2 = np.where(Raster[1:,:] != Raster[:-1,:])
     Raster[P2] = Outline_value
+    
+    for i in range(len(Raster)):
+        for j in range(len(Raster[0,:])):
+            if Raster[i,j] == Outline_value:
+                K = kernel (Raster, 3, i, j)
+                if np.mean(K) < 0:
+                    Raster[i,j] = 0
     
     return Raster
 
@@ -142,6 +88,8 @@ Sites = ["FEL"]
 Nodata_value = -9999
 
 
+# Use this if you want to time the execution
+Start = timeit.default_timer()
 
 
 #------------------------------------------------------------------
@@ -151,10 +99,6 @@ Nodata_value = -9999
 for site in Sites:
     fig=plt.figure(1, facecolor='White',figsize=[10,10])
     ax1 = plt.subplot2grid((1,1),(0,0),colspan=1, rowspan=1, axisbg='white')
-
-    # Set up the fonts and stuff
-    matplotlib.rc('xtick', labelsize=9) 
-    matplotlib.rc('ytick', labelsize=9)
 
     # Name the axes
     ax1.set_xlabel('x (m)', fontsize = 12)
@@ -166,10 +110,11 @@ for site in Sites:
     Platform, post_Platform, envidata_Platform = ENVI_raster_binary_to_2d_array ("Output/%s_Marsh.bil" % (site), site)
 
     
-    # Make a map!
+    # Make a mask!
     Platform_mask = np.ma.masked_where(Platform <=0, Platform)
     Platform_mask[Platform_mask>0] = DEM[Platform_mask>0]
-
+    
+    # Make a map!
     Map_HS = ax1.imshow(HS, interpolation='None', cmap=plt.cm.gist_gray, vmin = 100, vmax = 200)
     Map_DEM = ax1.imshow(DEM, interpolation='None', cmap=plt.cm.gist_gray, vmin = np.amin(DEM[DEM!=Nodata_value]), vmax = np.amax(DEM), alpha = 0.5)
     Map_Marsh = ax1.imshow(Platform_mask, interpolation='None', cmap=plt.cm.gist_earth, vmin=np.amin(DEM[DEM!=Nodata_value]), vmax=np.amax(DEM), alpha = 0.5)
@@ -186,10 +131,6 @@ for site in Sites:
     fig=plt.figure(2, facecolor='White',figsize=[10,10])
     ax1 = plt.subplot2grid((1,1),(0,0),colspan=1, rowspan=1, axisbg='white')
 
-    # Set up the fonts and stuff
-    matplotlib.rc('xtick', labelsize=9) 
-    matplotlib.rc('ytick', labelsize=9)
-
     # Name the axes
     ax1.set_xlabel('x (m)', fontsize = 12)
     ax1.set_ylabel('y (m)', fontsize = 12)
@@ -201,13 +142,13 @@ for site in Sites:
 
     # Outline the marsh
     Platform[Platform > 0] = 1
-    Marsh_outline = Outline (Platform,2)
+    Marsh_outline = Outline (Platform, 2, Nodata_value)
 
     
-    # Make a map!
+    # Make a mask!
     Outline_mask = np.ma.masked_where(Marsh_outline <=1, Marsh_outline)
 
-
+    # Make a map!
     Map_HS = ax1.imshow(HS, interpolation='None', cmap=plt.cm.gist_gray, vmin = 100, vmax = 200)
     Map_DEM = ax1.imshow(DEM, interpolation='None', cmap=plt.cm.gist_gray, vmin = np.amin(DEM[DEM!=Nodata_value]), vmax = np.amax(DEM), alpha = 0.5)
     
@@ -218,14 +159,11 @@ plt.savefig('Output/Figure_2.png')
 
 
 
-#Plot 3: Draw the confusion map, superimposed on a hillshade
+#Plot 3: Draw the marsh map and reference outline, superimposed on a hillshade
 for site in Sites:
-    fig=plt.figure(1, facecolor='White',figsize=[10,10])
+    fig=plt.figure(3, facecolor='White',figsize=[10,10])
     ax1 = plt.subplot2grid((1,1),(0,0),colspan=1, rowspan=1, axisbg='white')
 
-    # Set up the fonts and stuff
-    matplotlib.rc('xtick', labelsize=9) 
-    matplotlib.rc('ytick', labelsize=9)
 
     # Name the axes
     ax1.set_xlabel('x (m)', fontsize = 12)
@@ -239,10 +177,10 @@ for site in Sites:
 
     # Outline the reference
     Reference[Reference > 0] = 1
-    Ref_outline = Outline (Reference,2)
+    Ref_outline = Outline (Reference, 2, Nodata_value)
 
     
-    # Make a map!
+    # Make a mask!
     Outline_mask = np.ma.masked_where(Ref_outline <=1, Ref_outline)
     
     
@@ -257,4 +195,38 @@ for site in Sites:
     Map_Marsh = ax1.imshow(Outline_mask, interpolation='None', cmap=plt.cm.Reds, vmin = 0, vmax = 2, alpha = 1)
 
 plt.savefig('Output/Figure_3.png')
+
+
+
+
+#Plot 4: Draw the confusion map, superimposed on a hillshade
+for site in Sites:
+    fig=plt.figure(4, facecolor='White',figsize=[10,10])
+    ax1 = plt.subplot2grid((1,1),(0,0),colspan=1, rowspan=1, axisbg='white')
+
+
+    # Name the axes
+    ax1.set_xlabel('x (m)', fontsize = 12)
+    ax1.set_ylabel('y (m)', fontsize = 12)
+
+    # Load the relevant data
+    HS, post_HS, envidata_HS = ENVI_raster_binary_to_2d_array ("Input/%s_hs_clip.bil" % (site), site)
+    Confusion, post_Confusion, envidata_Confusion = ENVI_raster_binary_to_2d_array ("Output/%s_Confusion_DEM.bil" % (site), site)
+
+    
+    # Make a mask!
+    Confusion_mask = np.ma.masked_where(Confusion == Nodata_value, Confusion)
+    
+    
+    # Make a map!
+    Map_HS = ax1.imshow(HS, interpolation='None', cmap=plt.cm.gist_gray, vmin = 100, vmax = 200)
+    Map_DEM = ax1.imshow(Confusion_mask, interpolation='None', cmap=plt.cm.Spectral, vmin = -2, vmax = 2, alpha = 0.5)
+    
+
+plt.savefig('Output/Figure_4.png')
+
+
+
+Stop = timeit.default_timer()
+print 'Runtime = ', Stop - Start , 's'
 

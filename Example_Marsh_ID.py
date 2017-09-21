@@ -76,10 +76,10 @@ for site in Sites:
     
     # Disable this section if you have no reference marsh.
     print " Loading Detected Marsh"
-    Platform_work, post_Platform, envidata_Platform =  ENVI_raster_binary_to_2d_array ("Input/%s_ref_DEM_clip.bil" % (site), site)
+    Platform_work, post_Platform, envidata_Platform =  ENVI_raster_binary_to_2d_array ("Output/%s_Marsh.bil" % (site), site)
 
     print "Measuring performances"
-    Reference, post_Reference, envidata_Reference =  ENVI_raster_binary_to_2d_array ("Input/%s_DEM_clip.bil" % (site), site)
+    Reference, post_Reference, envidata_Reference =  ENVI_raster_binary_to_2d_array ("Input/%s_ref_DEM_clip.bil" % (site), site)
     
     Confusion_matrix, Performance, Metrix = Confusion (Platform_work, Reference, Nodata_value)
     new_geotransform, new_projection, file_out = ENVI_raster_binary_from_2d_array (envidata_Platform, "Output/%s_Confusion_DEM.bil" % (site), post_Platform, Confusion_matrix)
