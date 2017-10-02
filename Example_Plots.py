@@ -51,27 +51,7 @@ import timeit
 from Example_functions import ENVI_raster_binary_to_2d_array
 from Example_functions import ENVI_raster_binary_from_2d_array
 from Example_functions import kernel
-
-
-
-# This is a function that makes an outline out of a raster where each object has a single given value
-
-def Outline (Raster, Outline_value, Nodata_value):
-
-    P1 = np.where(Raster[:,1:] != Raster[:,:-1])
-    Raster[P1] = Outline_value           
-
-    P2 = np.where(Raster[1:,:] != Raster[:-1,:])
-    Raster[P2] = Outline_value
-    
-    for i in range(len(Raster)):
-        for j in range(len(Raster[0,:])):
-            if Raster[i,j] == Outline_value:
-                K = kernel (Raster, 3, i, j)
-                if np.mean(K) < 0:
-                    Raster[i,j] = 0
-    
-    return Raster
+from Example_functions import Outline
 
 
 

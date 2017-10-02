@@ -42,6 +42,28 @@ def Distribution(Data2D, Nodata_value):
 
 
 
+
+#---------------------------------------------------------------
+# This is a function that makes an outline out of a raster where each object has a single given value
+def Outline (Raster, Outline_value, Nodata_value):
+
+    P1 = np.where(Raster[:,1:] != Raster[:,:-1])
+    Raster[P1] = Outline_value           
+
+    P2 = np.where(Raster[1:,:] != Raster[:-1,:])
+    Raster[P2] = Outline_value
+    
+    for i in range(len(Raster)):
+        for j in range(len(Raster[0,:])):
+            if Raster[i,j] == Outline_value:
+                K = kernel (Raster, 3, i, j)
+                if np.mean(K) < 0:
+                    Raster[i,j] = 0
+    
+    return Raster
+
+
+
 #-----------------------------------------------------------------------------------------------------
 # This functions calculates local slope using the maximum slope method
 # http://www.onlinegeographer.com/slope/Dunn_hickey_slope.pdf, equation 7
